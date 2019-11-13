@@ -1,0 +1,15 @@
+{
+  "name": "catch-messaging",
+  "version": "1.0.0",
+  "description": "Publish messages and subscribe to message channels on Catch Service Management Gateways.",
+  "repository": "https://github.com/catchtechnologies/catch-messaging.git",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Patrick Murray",
+  "license": "ISC",
+  "dependencies": {
+    "redis": "^2.8.0"
+  }
+}
