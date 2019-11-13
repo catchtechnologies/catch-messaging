@@ -1,17 +1,12 @@
 var Subscriber = require('./subscriber');
 var Publisher = require('./publisher');
 
-var serviceName = 'catch-messaging';
-var serviceCommands = [];
-var serviceResponses = [];
-var debug = true;
-
-class Events {
+class Messaging {
 
   constructor(serviceName, serviceCommands, serviceResponses, debug, callback) {
     this.serviceName = serviceName || '';
-    this.serviceCommands = serviceCommands || [];
-    this.serviceResponses = serviceResponses || [];
+    this.serviceCommands = serviceCommands;
+    this.serviceResponses = serviceResponses;
     this.debug = debug || false;
     this.callback = callback;
     this.init();
@@ -27,10 +22,12 @@ class Events {
     this.detectPubSubLoop();
 
     /* Publish reponses from this service. */
-    this.publisher = new Publisher(this.serviceName, this.serviceResponses, debug);
+    if (this.serviceResponses) {
+      this.publisher = new Publisher(this.serviceName, this.serviceResponses, this.debug);
+    }
 
     /* Subscribe to messages for this service. */
-    if (this.callback) {
+    if (this.callback && this.serviceCommands) {
       this.subscriber = new Subscriber(this.serviceName, this.serviceCommands, this.debug, (message) => {
         this.callback(message);
       });
@@ -41,16 +38,18 @@ class Events {
 
   detectPubSubLoop() {
     try {
-      serviceCommands.forEach(command => {
-        serviceResponses.forEach((response, index, object) => {
-          if (response.channel === command.channel) {
-            log('Potential pubsub loop detected! Removing response: ' + response.friendlyName + ' with duplicate channel: ' + command.channel);
-            object.splice(index, 1);
-          }
+      if (this.serviceCommands && this.serviceCommands) {
+        this.serviceCommands.forEach(command => {
+          this.serviceResponses.forEach((response, index, object) => {
+            if (response.channel === command.channel) {
+              log('Potential pubsub loop detected! Removing response: ' + response.friendlyName + ' with duplicate channel: ' + command.channel);
+              object.splice(index, 1);
+            }
+          });
         });
-      });
+      }
     } catch (e) {
-      log('Exception checking for pubsub loops');
+      this.log('Exception checking for pubsub loops');
     }
   }
 
@@ -69,4 +68,4 @@ class Events {
   }
 }
 
-module.exports = Events;
+module.exports = Messaging;
