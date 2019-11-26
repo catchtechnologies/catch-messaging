@@ -1,6 +1,6 @@
 {
   "name": "catch-messaging",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Publish messages and subscribe to message channels on Catch Service Management Gateways.",
   "repository": "https://github.com/catchtechnologies/catch-messaging.git",
   "main": "index.js",

@@ -1,6 +1,9 @@
 # Catch Messaging
 Publish messages and subscribe to message channels on Catch Service Management Gateways.
 
+## Requirements  
+This package uses (redis)[https://redis.io] pubsub for messaging and requires a local redis instance to be running.
+
 ## Usage  
 ``npm i catch-messaging``  
   

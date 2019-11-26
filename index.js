@@ -14,7 +14,7 @@ class Messaging {
 
   log(message) {
     if (this.debug) {
-      console.log(serviceName + ' Event Manager: ' + message + '\n');
+      console.log(this.serviceName + ' Event Manager: ' + message + '\n');
     }
   }
 
