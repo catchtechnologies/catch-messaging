@@ -11,7 +11,8 @@ class Publisher {
       this.log("redis client error: " + err);
     });
     this.redisClient.on('connect', () => {
-      this.log("redis client connected.");      
+      this.log("redis client connected.");
+      this.connected = true;
     });
   }
 
@@ -23,27 +24,31 @@ class Publisher {
     if (this.debug) {
       console.log(this.serviceName + ' Event Publisher: ' + message) + '\n';
     }
-  }  
+  }
 
   publish(message) {
     try {
-      let matchedResponses = this.getResponse(message);      
-      let i = matchedResponses.length - 1;
-      for (i; i > -1; i--) {
-        if (matchedResponses[i].useRegularExpression && matchedResponses[i].parsedRegexValue) {
-          this.log('Publishing to channel: ' + matchedResponses[i].channel + ' with value: ' + matchedResponses[i].parsedRegexValue);
-          const valueObject = {
-            value: matchedResponses[i].parsedRegexValue
+      if (this.connected) {
+        let matchedResponses = this.getResponse(message);
+        let i = matchedResponses.length - 1;
+        for (i; i > -1; i--) {
+          if (matchedResponses[i].useRegularExpression && matchedResponses[i].parsedRegexValue) {
+            this.log('Publishing to channel: ' + matchedResponses[i].channel + ' with value: ' + matchedResponses[i].parsedRegexValue);
+            const valueObject = {
+              value: matchedResponses[i].parsedRegexValue
+            }
+            this.redisClient.publish(matchedResponses[i].channel, JSON.stringify(valueObject));
+            matchedResponses[i].parsedRegexValue = null;
+          } else if (!matchedResponses[i].useRegularExpression) {
+            this.log('Publishing to channel: ' + matchedResponses[i].channel + ' with value: null');
+            const valueObject = {
+              value: null
+            }
+            this.redisClient.publish(matchedResponses[i].channel, JSON.stringify(valueObject));
           }
-          this.redisClient.publish(matchedResponses[i].channel, JSON.stringify(valueObject));
-          matchedResponses[i].parsedRegexValue = null;
-        } else if (!matchedResponses[i].useRegularExpression) {
-          this.log('Publishing to channel: ' + matchedResponses[i].channel + ' with value: null');
-          const valueObject = {
-            value: null
-          }
-          this.redisClient.publish(matchedResponses[i].channel, JSON.stringify(valueObject));
         }
+      } else {
+        this.log('Cannot publish message until connected to redis.');
       }
     } catch (e) {
       this.log('Exception publishing message: ' + e);

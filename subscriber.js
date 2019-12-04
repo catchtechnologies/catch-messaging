@@ -13,8 +13,8 @@ class Subscriber {
     });
     this.redisClient.on('connect', () => {
       this.log("redis client connected.");      
-    });
-    this.subscribe();
+      this.subscribe();
+    });    
   }
 
   /**
@@ -39,7 +39,7 @@ class Subscriber {
         this.log("Received msg on channel: " + channel + " with value: " + value);
         channel = channel.replace(this.serviceName + '.', '');
         channel = channel.trim();
-        this.log("Parsed channel =  " + channel);
+        this.log("Parsed channel = " + channel);
         let sendCommands = this.getCommandsWithChannel(channel);
         for (var i = sendCommands.length - 1; i > -1; i--) {
           let message = this.appendSpecialCharacters(sendCommands[i]);
