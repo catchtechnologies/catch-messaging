@@ -26,6 +26,13 @@ class Publisher {
     }
   }
 
+    /**
+   * Disconnects the redis client.
+   */
+  exit() {
+    this.redisClient.quit();
+  }
+
   publish(message) {
     try {
       if (this.connected) {

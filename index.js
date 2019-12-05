@@ -63,8 +63,8 @@ class Messaging {
   }
 
   exit() {
-    this.publisher.redisClient.quit();
-    this.subscriber.redisClient.quit();
+    this.publisher.exit();
+    this.subscriber.exit();
   }
 }
 

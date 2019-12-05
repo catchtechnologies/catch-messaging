@@ -12,9 +12,13 @@ class Subscriber {
       this.log("redis client error: " + err);
     });
     this.redisClient.on('connect', () => {
-      this.log("redis client connected.");      
-      this.subscribe();
-    });    
+      this.log("redis client connected.");
+      const channels = this.getChannels();
+      this.subscribe(channels);
+    });
+    this.redisClient.on("message", (channel, value) => {
+      this.handleMessage(channel, value);
+    });
   }
 
   /**
@@ -28,34 +32,80 @@ class Subscriber {
   }
 
   /**
-   * Subscribes to a redis pubSub channel and processes received messages.
+   * Disconnects the redis client.
    */
-  subscribe() {
-    this.log('subscribing to: ' + this.serviceName + '.*');
-    this.redisClient.psubscribe(this.serviceName + '.*');
-    this.redisClient.on("pmessage", (pattern, channel, value) => {
-      try {
-        const valueObject = JSON.parse(value);
-        this.log("Received msg on channel: " + channel + " with value: " + value);
-        channel = channel.replace(this.serviceName + '.', '');
-        channel = channel.trim();
-        this.log("Parsed channel = " + channel);
-        let sendCommands = this.getCommandsWithChannel(channel);
-        for (var i = sendCommands.length - 1; i > -1; i--) {
-          let message = this.appendSpecialCharacters(sendCommands[i]);
-          if (message.includes('#PAYLOAD#')) {
-            if (valueObject.value != null) {
-              message = message.replace(new RegExp('#PAYLOAD#', 'g'), valueObject.value);
-              this.callback(message);
-            }
-            return;
-          }
-          this.callback(message);
-        }
-      } catch (e) {
-        this.log('Exception receiving subscribe message: ' + e);
+  exit() {
+    this.redisClient.quit();
+  }
+
+  /**
+   * Returns an array of channels parsed from the array of service commands.
+   */
+  getChannels() {
+    let result = [];
+    this.serviceCommands.forEach(command => {
+      if (command.channel) {
+        result.push(command.channel);
       }
     });
+    return result;
+  }
+
+  /**
+ * Subscribes to a redis pubsub channels and processes received messages.
+ */
+  subscribe(channels) {
+    try {
+      this.log('Subscribing to channels.');
+      this.redisClient.subscribe(channels);
+    } catch (e) {
+      this.log('Exception subscribing to channels. ' + e);
+    }
+  }
+
+  /**
+    * Unsubscribes from all redis pubsub channels.
+    */
+  unsubscribeAll() {
+    return new Promise((resolve, reject) => {
+      try {
+        this.log('Unsubscribing from all channels.');
+        this.redisClient.unsubscribe();
+        resolve();
+      } catch (e) {
+        this.log('Exception subscribing to channels. ' + e);
+        reject();
+      }
+    });
+  }
+
+  /** 
+ * Processes received messages and sends the result to the callback.
+ * @param {array} channel - A string containing the channel to search for.
+ * @param {string} value - A json string containing the origin, timestamp and value object.
+ * @returns {string} A json array of service commands.
+ */
+
+  handleMessage(channel, value) {
+    try {
+      const valueObject = JSON.parse(value);
+      this.log("Received msg on channel: " + channel + " with value: " + value);
+      channel = channel.trim();
+      const sendCommands = this.getCommandsWithChannel(channel);
+      for (var i = sendCommands.length - 1; i > -1; i--) {
+        let message = this.appendSpecialCharacters(sendCommands[i]);
+        if (message.includes('#PAYLOAD#')) {
+          if (valueObject.value != null) {
+            message = message.replace(new RegExp('#PAYLOAD#', 'g'), valueObject.value);
+            this.callback(message);
+          }
+          return;
+        }
+        this.callback(message);
+      }
+    } catch (e) {
+      this.log('Exception receiving subscribe message: ' + e);
+    }
   }
 
   /** 

@@ -15,7 +15,7 @@ const debug = true;
 // Sample commands for testing.
 var serviceCommands = [
   {
-    endWith: "n",
+    endWith: "none",
     useHex: false,
     channel: "connect",
     pattern: "connect"
@@ -25,7 +25,7 @@ var serviceCommands = [
 // Sample responses for testing.
 var serviceResponses = [
   {
-    endWith: "n",
+    endWith: "none",
     useHex: false,
     useRegularExpression: false,
     channel: "messaging tester.connected",
@@ -35,12 +35,12 @@ var serviceResponses = [
 
 messaging = new Messaging(serviceName, serviceCommands, serviceResponses, debug, (message) => {
   console.log('New message received: ' + message);
-  if(message === 'connect\n'){
+  if(message === 'connect'){
     connect();
   }
 });
 
 function connect(){
-  messaging.publish('connected\n');
+  messaging.publish('connected');
 }
 ```
