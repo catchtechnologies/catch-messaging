@@ -42,14 +42,16 @@ class Publisher {
           if (matchedResponses[i].useRegularExpression && matchedResponses[i].parsedRegexValue) {
             this.log('Publishing to channel: ' + matchedResponses[i].channel + ' with value: ' + matchedResponses[i].parsedRegexValue);
             const valueObject = {
-              value: matchedResponses[i].parsedRegexValue
+              value: matchedResponses[i].parsedRegexValue,
+              persist: matchedResponses[i].persist
             }
             this.redisClient.publish(matchedResponses[i].channel, JSON.stringify(valueObject));
             matchedResponses[i].parsedRegexValue = null;
           } else if (!matchedResponses[i].useRegularExpression) {
             this.log('Publishing to channel: ' + matchedResponses[i].channel + ' with value: null');
             const valueObject = {
-              value: null
+              value: 'null',
+              persist: matchedResponses[i].persist
             }
             this.redisClient.publish(matchedResponses[i].channel, JSON.stringify(valueObject));
           }

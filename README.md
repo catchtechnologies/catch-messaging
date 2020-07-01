@@ -29,7 +29,8 @@ var serviceResponses = [
     useHex: false,
     useRegularExpression: false,
     channel: "messaging tester.connected",
-    pattern: "connected"
+    pattern: "connected",
+    persist: false
   }
 ]
 
