@@ -26,11 +26,20 @@ class Publisher {
     }
   }
 
-    /**
-   * Disconnects the redis client.
-   */
+  /**
+ * Disconnects the redis client.
+ */
   exit() {
     this.redisClient.quit();
+  }
+
+  publishDirect(channel, value) {
+    try {
+      this.log('Publishing direct to channel: ' + channel + ' with value: ' + value);
+      this.redisClient.publish(channel, value);
+    } catch (e) {
+      this.log('Exception publishing message direct: ' + e);
+    }
   }
 
   publish(message) {
