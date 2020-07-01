@@ -35,13 +35,18 @@ class Publisher {
 
   publishDirect(channel, value) {
     try {
-      this.log('Publishing direct to channel: ' + channel + ' with value: ' + value);
-      this.redisClient.publish(channel, value);
+      this.log('Publishing to channel: ' + channel + ' with value: ' + value);
+      const valueObject = {
+        published: Date.now(),
+        origin: this.serviceName,
+        value: value
+      }
+      this.redisClient.publish(channel, JSON.stringify(valueObject));
     } catch (e) {
-      this.log('Exception publishing message direct: ' + e);
+      this.log('Exception direct publishing message: ' + e);
     }
   }
-
+  
   publish(message) {
     try {
       if (this.connected) {
