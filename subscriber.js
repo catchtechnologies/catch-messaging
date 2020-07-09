@@ -97,9 +97,15 @@ class Subscriber {
         if (message.includes('#PAYLOAD#')) {
           if (valueObject.value != null) {
             message = message.replace(new RegExp('#PAYLOAD#', 'g'), valueObject.value);
+            if (sendCommands[i].useHex) {
+              message = Buffer.from(message.split(' '));
+            }
             this.callback(message);
           }
           return;
+        }
+        if (sendCommands[i].useHex) {
+          message = Buffer.from(message.split(' '));
         }
         this.callback(message);
       }
