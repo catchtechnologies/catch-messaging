@@ -7,10 +7,10 @@ class Publisher {
     this.debug = debug || false;
 
     this.redisClient = Redis.createClient();
-    this.redisClient.on('error', (err) => {
+    this.redisClient.on("error", (err) => {
       this.log("redis client error: " + err);
     });
-    this.redisClient.on('connect', () => {
+    this.redisClient.on("connect", () => {
       this.log("redis client connected.");
       this.connected = true;
     });
@@ -22,66 +22,84 @@ class Publisher {
    */
   log(message) {
     if (this.debug) {
-      console.log(this.serviceName + ' Event Publisher: ' + message) + '\n';
+      console.log(this.serviceName + " Event Publisher: " + message) + "\n";
     }
   }
 
   /**
- * Disconnects the redis client.
- */
+   * Disconnects the redis client.
+   */
   exit() {
     this.redisClient.quit();
   }
-  
+
   publish(message) {
     try {
       if (this.connected) {
         let matchedResponses = this.getResponse(message);
         let i = matchedResponses.length - 1;
         for (i; i > -1; i--) {
-          if (matchedResponses[i].useRegularExpression && matchedResponses[i].parsedRegexValue) {
-            this.log('Publishing to channel: ' + matchedResponses[i].channel + ' with value: ' + matchedResponses[i].parsedRegexValue);
+          if (
+            matchedResponses[i].useRegularExpression &&
+            matchedResponses[i].parsedRegexValue
+          ) {
+            this.log(
+              "Publishing to channel: " +
+                matchedResponses[i].channel +
+                " with value: " +
+                matchedResponses[i].parsedRegexValue
+            );
             const valueObject = {
               published: Date.now(),
               origin: this.serviceName,
               value: matchedResponses[i].parsedRegexValue,
-              persist: matchedResponses[i].persist
-            }
-            this.redisClient.publish(matchedResponses[i].channel, JSON.stringify(valueObject));
+              persist: matchedResponses[i].persist,
+            };
+            this.redisClient.publish(
+              matchedResponses[i].channel,
+              JSON.stringify(valueObject)
+            );
             matchedResponses[i].parsedRegexValue = null;
           } else if (!matchedResponses[i].useRegularExpression) {
-            this.log('Publishing to channel: ' + matchedResponses[i].channel + ' with value: null');
+            this.log(
+              "Publishing to channel: " +
+                matchedResponses[i].channel +
+                " with value: null"
+            );
             const valueObject = {
               published: Date.now(),
               origin: this.serviceName,
-              value: 'null',
-              persist: matchedResponses[i].persist
-            }
-            this.redisClient.publish(matchedResponses[i].channel, JSON.stringify(valueObject));
+              value: "null",
+              persist: matchedResponses[i].persist,
+            };
+            this.redisClient.publish(
+              matchedResponses[i].channel,
+              JSON.stringify(valueObject)
+            );
           }
         }
       } else {
-        this.log('Cannot publish message until connected to redis.');
+        this.log("Cannot publish message until connected to redis.");
       }
     } catch (e) {
-      this.log('Exception publishing message: ' + e);
+      this.log("Exception publishing message: " + e);
     }
   }
 
   publishDirect(channel, value) {
     try {
-      this.log('Publishing to channel: ' + channel + ' with value: ' + value);
+      this.log("Publishing to channel: " + channel + " with value: " + value);
       const valueObject = {
         published: Date.now(),
         origin: this.serviceName,
-        value: value
-      }
+        value: value,
+      };
       this.redisClient.publish(channel, JSON.stringify(valueObject));
     } catch (e) {
-      this.log('Exception direct publishing message: ' + e);
+      this.log("Exception direct publishing message: " + e);
     }
   }
-  
+
   /**
    * Searches the array of serviceResponses for the incoming message.
    *
@@ -90,46 +108,63 @@ class Publisher {
    */
   getResponse(message) {
     if (this.serviceResponses) {
-      return this.serviceResponses.filter((response) => {
-        if (response.useRegularExpression && !response.useHex && this.checkEndWith(message, response)) {
-          return this.parseRegex(message, response);
-        }
-        if (response.useRegularExpression && response.useHex) {
-          var hexString = '';
-          for (var i = 0; i < message.length; i++) {
-            if (i != message.length - 1) {
-              hexString = hexString + '0x' + Buffer.from(message.charAt(i), 'utf8').toString('hex') + ' ';
-            } else {
-              hexString = hexString + '0x' + Buffer.from(message.charAt(i), 'utf8').toString('hex');
-            }
+      return this.serviceResponses
+        .filter((response) => {
+          if (
+            response.useRegularExpression &&
+            !response.useHex &&
+            this.checkEndWith(message, response)
+          ) {
+            return this.parseRegex(message, response);
           }
-          return this.parseRegex(hexString, response);
-        }
-        if (response.useHex) {          
-          return this.parseHex(message, response);
-        }
-        return this.checkResponsePattern(message, response);
-      }).map(response => response);
+          if (response.useRegularExpression && response.useHex) {
+            var hexString = "";
+            for (var i = 0; i < message.length; i++) {
+              if (i != message.length - 1) {
+                hexString =
+                  hexString +
+                  "0x" +
+                  Buffer.from(message.charAt(i), "utf8").toString("hex") +
+                  " ";
+              } else {
+                hexString =
+                  hexString +
+                  "0x" +
+                  Buffer.from(message.charAt(i), "utf8").toString("hex");
+              }
+            }
+            return this.parseRegex(hexString, response);
+          }
+          if (response.useHex) {
+            return this.parseHex(message, response);
+          }
+          return this.checkResponsePattern(message, response);
+          //TODO - check if the above is correct. Perhaps it should be:
+          // if(this.checkResponsePattern(message, response)){
+          //   return response;
+          // }
+        })
+        .map((response) => response);
     }
     return [];
   }
 
   /**
    * Matches a message to a string representation of hex characters.
-   * 
+   *
    * @param {string} message - A string containing the message to check for a hex value.
    * @param {json} response - A json object with a pattern field that contains a string representation of the hex characters to match ex: 0x00,0x0A.
    * @returns {bool} True if a match was found.
    */
   parseHex(message, response) {
     if (response.useHex && response.pattern) {
-      if (message == Buffer.from(response.pattern.split(' '))) {
+      if (message == Buffer.from(response.pattern.split(" "))) {
         return true;
       }
     }
-    return false
+    return false;
   }
-  
+
   /**
    * Matches a message to a regex and stores the parsed value in the response object's parsedRegexValue field.
    *
@@ -139,7 +174,7 @@ class Publisher {
    */
   parseRegex(message, response) {
     message = message.trim();
-    if (message === '') {
+    if (message === "") {
       return false;
     }
 
@@ -164,23 +199,23 @@ class Publisher {
    */
   checkResponsePattern(message, response) {
     switch (response.endWith) {
-      case 'none':
+      case "none":
         if (message === response.pattern) {
           return true;
         }
         break;
-      case 'r':
-        if (message === response.pattern + '\r') {
+      case "r":
+        if (message === response.pattern + "\r") {
           return true;
         }
         break;
-      case 'n':
-        if (message === response.pattern + '\n') {
+      case "n":
+        if (message === response.pattern + "\n") {
           return true;
         }
         break;
-      case 'rn':
-        if (message === response.pattern + '\r\n') {
+      case "rn":
+        if (message === response.pattern + "\r\n") {
           return true;
         }
         break;
@@ -201,28 +236,36 @@ class Publisher {
    */
   checkEndWith(message, response) {
     switch (response.endWith) {
-      case 'none':
-        if (message.slice(-2) != "\r\n" && message.slice(-1) != "\r" && message.slice(-1) != "\n") {
+      case "none":
+        if (
+          message.slice(-2) != "\r\n" &&
+          message.slice(-1) != "\r" &&
+          message.slice(-1) != "\n"
+        ) {
           return true;
         }
         break;
-      case 'r':
-        if (message.slice(-1) === '\r') {
+      case "r":
+        if (message.slice(-1) === "\r") {
           return true;
         }
         break;
-      case 'n':
-        if (message.slice(-1) === '\n') {
+      case "n":
+        if (message.slice(-1) === "\n") {
           return true;
         }
         break;
-      case 'rn':
-        if (message.slice(-1) === '\r\n') {
+      case "rn":
+        if (message.slice(-2) === "\r\n") {
           return true;
         }
         break;
       default:
-        if (message.slice(-2) != "\r\n" && message.slice(-1) != "\r" && message.slice(-1) != "\n") {
+        if (
+          message.slice(-2) != "\r\n" &&
+          message.slice(-1) != "\r" &&
+          message.slice(-1) != "\n"
+        ) {
           return true;
         }
     }
