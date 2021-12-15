@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] - 2021-12-15
+
+- Upgraded redis dependency version.
+
 ## [1.5.1] - 2020-11-10
 
 ### Fixed
